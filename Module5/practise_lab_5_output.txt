@@ -1,0 +1,36 @@
+
+Lot Area
+mean: 1499.6904436860068 
+median: 1442.0 
+mode: 864 
+STDEV: 505.508887472041
+
+60 samples
+mean: 1427.8333333333333 
+median: 1340.5 
+mode: 1040 
+STDEV: 532.5246287506228
+
+120 samples
+mean: 1467.8166666666666 
+median: 1423.0 
+mode: 848 
+STDEV: 492.9167005382023
+
+# more samples and larger samples -> more accurate estimation of population mean
+
+Lot Area mean distribution 1496.7457666666667 
+
+sales price
+mean price: 180796.0600682594
+sample 50 mean: 202851.48
+Price mean distribution 180662.1797826232 
+
+Q1 Interval observations: 731
+Q1 Interval mean:289662.85499316006
+Q2 Interval observations: 729
+Q2 Interval mean:184199.76680384087
+Q3 Interval observations: 705
+Q3 Interval mean:143799.04822695034
+Q4 Interval observations: 730
+Q4 Interval mean:105424.19315068494

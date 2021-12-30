@@ -1,0 +1,36 @@
+count    1000.000000
+mean      124.922000
+std        20.284313
+min        82.000000
+25%       112.000000
+50%       122.000000
+75%       136.000000
+max       230.000000
+Name: SBP, dtype: float64
+
+IQR: 24.0
+std: 20.27416868825945
+Standard error: 0.6411255072136812
+//
+The standard error is much lower than the standard deviation.  
+//
+
+sample: 1
+mean: 126.68
+std: 17.949306393284395
+Standard error: 1.7949306393284394
+sample: 2
+mean: 127.12
+std: 20.8217578508636
+Standard error: 2.0821757850863603
+sample: 3
+mean: 123.22
+std: 17.076053408208818
+Standard error: 1.7076053408208818
+
+// 
+The sampled data sets show an increased standard error but either an increased or decreased stand deviation
+//
+
+
+95th percentile is SBP values in range of range (164,230)

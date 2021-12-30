@@ -1,0 +1,276 @@
+---
+title: "Edelstein_Evan_Final_Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r }
+#Evan Edelstein BTM-6000 Final project 
+"
+Study the association between poor sleep and poor health 
+Exposure: poor sleep 
+Outcome: poor health 
+
+"
+#load libraries
+library(doBy)
+library(dplyr)
+library(NHANES)
+library(pwr)
+library(nhanesA)
+library(ggplot2)
+library(aod)
+library(ROCR)
+# 1A) clean and order data 
+# load Nhanes data set 
+df <- NHANES
+
+#remove patients who did not fill out sleep trouble data
+df<-df[which(!is.na(df$SleepTrouble)),]
+
+#remove kids from datafarme 
+df <- filter(df, Age>=18)
+
+# create binary class for health (0:poor | 1:healthy), white, employed and old(over 60 or not)
+
+df$healthy <- ifelse(df$HealthGen == "Poor",0,1)
+
+df$white <- ifelse(df$Race1 == "White", "White", "not-white" )
+
+df$emplyed <- ifelse(df$Work == "Working", "Employed", "Unemployed")
+
+df$Old <- ifelse(df$Age >= 60, "Over60", "Under60")
+
+#create nominal startified labels for weight class based on BMI 
+df$Weight_factor <- ifelse(df$BMI >= 30,"Obese",
+                           ifelse(df$BMI >= 26,"Overweight"
+                                  ,ifelse(df$BMI <= 18,"Underweight","Healthy")))
+
+
+#(1B) summarize,  graph and examine the data set 
+
+#Summary of the data set 
+summary(df)
+
+# plot summary statistics for sleep hours per night and BMI 
+avrgs <- data.frame()
+sample_summary <- function(df,var,val){
+  df<-df[which(!is.na(df[[var]])),]
+  df_t <- df[which(df$SleepTrouble == val),]
+  x <- df_t[[var]]
+  mean <- mean(x)
+  sd <- sd(x)
+  se<- sd /(sqrt(length(x)))
+  median <- median(x)
+  LI <- mean - se
+  UI <- mean + se
+  ci <- paste (round(mean,2),"(", round(LI,2), round(UI,2),")")
+  row <- data.frame(variable = paste(var,"_",val), mean = ci, sd = sd , se = se, median = median)
+  #print(mean)
+  return(row)
+}
+
+vars <- c("SleepHrsNight", "BMI")
+for (var in vars){
+  row <- sample_summary(df, var,"Yes")
+  avrgs <- rbind(avrgs, row)
+  row <- sample_summary(df, var,"No")
+  avrgs <- rbind(avrgs, row)
+}
+
+print(avrgs)
+
+# plot histograma of BMI and Sleep hours per night 
+vars <- c("BMI","SleepHrsNight")
+for (i in vars){
+  df<-df[which(!is.na(df[[i]])),]
+  hist(df[[i]], main = i, xlab = i )
+  abline(v=mean(df[[i]]),col="red",cex=1.2,lty=4)
+  abline(v=mean(df[[i]])+sd(df[[i]]),col="blue",cex=1.2,lty=4)
+  abline(v=mean(df[[i]])-sd(df[[i]]),col="blue",cex=1.2,lty=4)
+}
+
+
+#plot boxplots for nominal variables 
+vars <- c("HealthGen","SleepTrouble","Weight_factor","Race1", "Gender", "Old")
+for (i in vars){
+  barplot(prop.table(table(df[[i]])),cex.names=0.75, main = i, ylab = "Frequency")
+  
+}
+
+
+```
+```{r}
+
+# 2A) t.test for association bewteen sleep and health in total population 
+#null <- mean BMI of those with and without sleep trouble is equal
+#alt <- mean BMI of those with sleep trouble is greater than those who dont have sleep trouble 
+
+ttest <- t.test(BMI~ SleepTrouble , data = df)
+print(ttest)
+
+
+#p-value = 5.043e-08 ; so we reject the null hyp and go wqith the alt 
+
+# 2B) chi^2 test 
+#null <- no relationship between sleep trouble and reported Health 
+#alt. <- relationship between sleep trouble and reported Health
+
+table <- table(df$SleepTrouble, df$HealthGen)
+chi_test <- chisq.test(table)
+print(chi_test)
+
+table_2 <- table(df$SleepTrouble, df$Weight_factor)
+chi_test_2 <- chisq.test(table_2)
+print(chi_test)
+
+
+#2C) Anova+tukey 
+#hours slept per night is equivilent over weigth and health 
+anova_test <- aov(SleepHrsNight ~HealthGen, data = df )
+print(summary(anova_test))
+tukey <- TukeyHSD(anova_test)
+print(tukey)
+
+anova_test_2 <- aov(SleepHrsNight ~Weight_factor, data = df )
+print(summary(anova_test_2))
+tukey_2 <- TukeyHSD(anova_test_2)
+print(tukey_2)
+
+
+# 3A) Contingency tables for subgroups 
+paramters <-c("Gender","white", "HealthGen","Weight_factor", "Work","emplyed","Old")
+for (i in paramters){
+  df_chi<-df[which(!is.na(df[[i]])),]
+  formula <- as.formula(paste("~",i,"+SleepTrouble"))
+  xt <- xtabs(formula , data=df_chi)
+  contigency_table<- prop.table(xt)
+  table <- addmargins(contigency_table)
+  print(table)
+}
+
+# 3B) t.test and chi-squere test for association bewteen sleep and health in different subgroups 
+#null <- mean BMI of those with and without sleep trouble is equal among subgroup 
+#alt <- mean BMI of those with sleep trouble is greater than those who dont have sleep trouble among subgroup
+
+
+
+Chisq_df <- data.frame()
+ttest_df <- data.frame()
+
+t_test_strat <- function(df,column, value, comp){
+  df<-df[which(!is.na(df[[column]])),]
+  df_t <- df[which(df[[column]]== value),]
+  n <- nrow(df_t)
+  ttest <- t.test(BMI~ SleepTrouble , data = df_t)
+  pval <- ttest$p.value #<- p-value 
+  alt_null <- ifelse(pval <= 0.05,"< 0.05","> 0.05" ) 
+  diff_in_mean<-ttest$estimate[1]-ttest$estimate[2] #TODO Make absolte value 
+  LL_CI<-ttest$conf.int[1] # <- lower level for confidence interval 
+  UL_CI<-ttest$conf.int[2]
+  diff <- paste(round(diff_in_mean,1)," (",round(LL_CI,1)," to ",round(UL_CI,1),")",sep="")
+  # Populate the row
+  t_row <- data.frame(group = value, t =ttest$statistic , P_value = alt_null, Diff_in_means = diff , means = paste(round(ttest$estimate[1],2) , ";", round(ttest$estimate[2],2), n=n ) )
+  table <- table(df_t$SleepTrouble, df_t[[comp]])
+  chi_test <- chisq.test(table)
+  c_pval <- chi_test$p.value #<- p-value 
+  c_alt_null <- ifelse(c_pval <= 0.05,"< 0.05","> 0.05" ) 
+  c_row <- data.frame(group = value, t =chi_test$statistic , P_value = c_alt_null, n= n  )
+  
+  print(chi_test)
+  print(ttest)
+  results_list <- list("t_row" = t_row, "c_row" = c_row)
+  return(results_list) 
+  
+}
+params <- list()
+params[[1]] = c("Gender","male", "female")
+params[[2]] = c("white","White","not-white")
+params[[3]] = c("emplyed","Employed","Unemployed")
+params[[4]] = c("Old","Under60","Over60")
+
+for (param in params) {
+    column <- param[1]
+    value_1 <- param[2]
+    value_2 <- param[3]
+    comp <-"Weight_factor"
+    results_list <- t_test_strat(df,column,value_1,comp)
+    #Add the row
+    ttest_df <- rbind(ttest_df, results_list$t_row)
+    Chisq_df <- rbind(Chisq_df, results_list$c_row,simulate.p.value = TRUE)
+    
+    results_list <- t_test_strat(df,column,value_2,comp)
+    #Add the row
+    ttest_df <- rbind(ttest_df, results_list$t_row)
+    Chisq_df <- rbind(Chisq_df, results_list$c_row)
+}
+
+print(ttest_df)
+print(Chisq_df)
+
+
+```
+
+```{r}
+#(4) Regression analyses 
+#Logistic regression and AUC for prediction of binary health group from sleep trouble and hours slept per night. 
+
+df<-df[which(!is.na(df$healthy)),]
+
+LOGREG <- function(df, IV_param, DV_param) {
+  cutoff <- nrow(df)
+  cut2 <- round(cutoff/2)
+  cutplus <- cut2+1
+  train <- df[1:cut2,]
+  test <- df[cutplus:cutoff,]
+  test_rows <- nrow(test)
+  train_rows <- nrow(train)
+  train <- head(train,nrow(test))
+  formula <- as.formula(paste(IV_param,"~",DV_param))
+  print(formula)
+  fit<-glm(formula ,data=train,family = binomial("logit"))
+  print(summary(fit))
+  print(anova(fit,test="LRT"))
+  table<-cbind(exp(fit$coefficients),exp(confint(fit)))
+  colnames(table)<-c("OR","LL","UL")
+  print(table)
+  
+  
+  predictions <- predict(fit,test)
+  
+  labels <- test$healthy
+  pred <- prediction(predictions, labels)
+  perf <- performance(pred, "tpr", "fpr")
+  auc <- performance(pred, measure = "auc")
+  auc_num <- auc@y.values[[1]]
+  print(auc_num)
+  plot(perf,
+       lty=3,
+       avg= "threshold",
+       colorize=TRUE,
+       lwd= 3,
+       main= "Logistic Regreison ROC",
+  )
+  mtext("prediction score cutoff", side=4)
+  mtext(paste("[IV: ", IV_param, "; DV:",DV_param, "]" ), side=3)
+  text(0.75,0.25, paste("AUC: ",round(auc_num,3)), col = "red")
+  plot(perf,
+       lty=3,
+       col="grey78",
+       add=TRUE)
+  return(auc_num)
+}
+auc_num <- LOGREG(df,"healthy","SleepHrsNight")
+
+auc_num <- LOGREG(df,"healthy","SleepTrouble") 
+
+auc_num <- LOGREG(df,"healthy","SleepHrsNight+SleepTrouble")
+
+
+```
+

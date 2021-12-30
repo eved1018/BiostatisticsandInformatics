@@ -1,0 +1,69 @@
+---
+title: "EE_practiseLab14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r }
+#Load dataset 
+df <- read.csv("/Users/evanedelstein/Desktop/School/2021/Spring2021/BTM-6000/Module14/Module 14 - Practice Lab - NHANES subset.csv")
+#librarys
+library(dplyr)
+
+
+# 1) Define a dichotomous high blood pressure variable (HTN==1 for SBP>=160mmHg).
+df$HTN <- ifelse(df$SBP>=160,1,0)
+df$HTN_factor <- factor(df$HTN,levels=c(0,1),labels=c("noHTN","HTN"))
+print(summary(df$HTN_factor))
+df$MALE_factor<-factor(df$MALE,levels=c(0,1),labels=c("female","male"))
+summary(df$MALE_factor)
+#2) Build a contingency table with the outcome variable HTN and gender. 
+#Do men have a higher risk of having HTN? 
+#Are the odds of being male greater for those with high SBP? 
+# Is the RR consistent with the OR?
+tbl<-matrix(c(sum(df$HTN[df$MALE==1]),sum(df$HTN[df$MALE==0]),sum(df$MALE[df$HTN==0]),length(df$MALE[df$MALE==0 & df$HTN==0])),
+            nrow=2,
+            dimnames = list(c("Male","Female"),c("HTN","no HTN") ))
+#OR = (a/b) / (c/d)
+OR<- (tbl[1,1]/tbl[1,2])/(tbl[2,1]/tbl[2,2])
+RR<- (tbl[1,1]/ (tbl[1,2]+tbl[1,1])) / (tbl[2,1]/ (tbl[2,2] +tbl[2,1]))
+#3) Develop a logistic regression model testing the very same association and confirm the calculated OR.
+fit_HTN1<-glm(HTN~MALE,data=df,family = binomial("logit"))
+print(summary(fit_HTN1))
+fit_HTN1$coefficients
+print(exp(fit_HTN1$coefficients))
+#4a) Build a logistic regression model with a) age (as a continuous variable) 
+
+fit_HTN2<-glm(HTN~age,data=df,family = binomial("logit"))
+summary(fit_HTN2)
+exp(fit_HTN2$coefficients)
+
+# 4b) tertiles of age (dummy coded or factor) as predictors. Is age a significant predictor in a) and b)?
+
+df$age_tertiles<-ntile(df$age,3)
+df$age_tertiles_factor<-factor(df$age_tertiles,levels=c(1:3),labels=c("Tertile1","Tertile2","Tertile3"))
+summary(df$age_tertiles_factor)
+fit_HTN3<-glm(HTN~age_tertiles_factor*MALE,data=df,family = binomial("logit"))
+print(summary(fit_HTN3))
+print(exp(fit_HTN3$coefficients))
+#5) Does inclusion of age in the model of 2) improve the accuracy of the prediction? Confirm with LRT and AIC/BIC computation.
+fit_HTN1<-glm(HTN~MALE,data=df,family = binomial("logit"))
+print(summary(fit_HTN1))
+fit_HTN4<-glm(HTN~MALE+age,data=df,family = binomial("logit"))
+print(summary(fit_HTN4))
+print(anova(fit_HTN1,fit_HTN4,test="LRT"))
+#6) Build a table showing all models with their OR (!!!) estimates and 95% Cis (of the ORs!!).
+table<-cbind(exp(fit_HTN4$coefficients),exp(confint(fit_HTN4)))
+colnames(table)<-c("Estimate","LL","UL")
+print(table)
+
+```

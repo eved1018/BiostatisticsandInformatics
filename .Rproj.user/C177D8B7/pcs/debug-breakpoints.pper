@@ -1,0 +1,21 @@
+{
+    "debugBreakpointsState": {
+        "breakpoints": [
+            {
+                "id": 13,
+                "path": "~/Desktop/School/2021/Spring2021/BTM-6000/Final_Poject/EE_FINAL_SCript.R",
+                "line_number": 249,
+                "function_steps": "29",
+                "function_name": "LOGREG",
+                "state": 1,
+                "editor_state": 1,
+                "editor_line_number": 249,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": false,
+                "type": 0,
+                "is_package_breakpoint": false,
+                "package_name": ""
+            }
+        ]
+    }
+}

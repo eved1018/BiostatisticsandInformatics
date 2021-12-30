@@ -1,0 +1,8 @@
+"0",""
+"0",""
+"0","#plot boxplots for nominal variables "
+"0","vars <- c(""HealthGen"",""SleepTrouble"",""Weight_factor"",""Race1"", ""Gender"", ""Old"")"
+"0","for (i in vars){"
+"0","  barplot(prop.table(table(df[[i]])),cex.names=0.75, main = i, ylab = ""Frequency"")"
+"0","  "
+"0","}"

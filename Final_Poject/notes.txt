@@ -1,0 +1,13 @@
+add dimension definitions anf units 
+show pval as < or > 0.05
+group definitnion 
+exposure and outcome 
+present LR like in chua paper table 2. 
+hrs -> 0.6332842
+both -> 0.722
+trouble -> 0.6741709
+
+
+
+
+

@@ -1,0 +1,176 @@
+#graded lab 3: Evan Edelstein
+
+#Load packages
+library(MASS)
+library(dplyr)
+library(doBy)
+
+# 1) load data set 
+df_source <- read.csv("/Users/user/Desktop/School/2021/Spring2021/BTM-6000/Module9/Graded Lab 3.csv")
+# 2a) inspect dataset  
+ls(df_source)
+summary(df_source$CKD)
+
+# 2b) remove missing values 
+df<-df_source[which(!is.na(df_source$CKD)), ]
+# 2c) how many missing did I exclude  
+missing <- nrow(df_source) - nrow(df)
+missing
+# 3)describe data set and build hist with mean(red) and sd(blue)
+summary(df)
+hist(df$CKD)
+abline(v=mean(df$CKD),col="red",cex=1.2,lty=4)
+abline(v=mean(df$CKD)+sd(df$CKD),col="blue",cex=1.2,lty=4)
+abline(v=mean(df$CKD)-sd(df$CKD),col="blue",cex=1.2,lty=4)
+
+# 4a) split dataset by gender
+df$MALE<-ifelse(df$gender==1,1,0)
+sum(df$MALE)
+df$MALE<-factor(df$MALE,levels=c(0,1),labels=c("female","male"))
+summary(df$MALE)
+# 4b) split by ckd stage greater or equal to 3, those who have ckd stage 3 or higher are considered to have ckd
+df$CKD3<-ifelse(df$CKD>=3,1,0)
+sum(df$CKD3)
+df$CKD3<-factor(df$CKD3,levels=c(0,1),labels=c("no_CKD","CKD"))
+summary(df$CKD3)
+
+# 4c) make output frame and populate
+demographics<-data.frame("Parameter"=c("sample_size","age","SBP","DBP","eGFR") ,"CKD_all"=NA,"no_CKD_all"=NA ,"no_CKD_men"=NA,"no_CKD_women"=NA, "CKD_men"=NA ,"CKD_women"=NA,"Diff_all"=NA )
+#  add sample size to first row 
+demographics[ 1, 2]<-length(df$Patient_ID[df$CKD3=="CKD"])
+demographics[ 1, 3]<-length(df$Patient_ID[df$CKD3=="no_CKD"])
+demographics[ 1, 4]<-length(df$Patient_ID[df$CKD3=="no_CKD" & df$MALE=="male"])
+demographics[ 1, 5]<-length(df$Patient_ID[df$CKD3=="no_CKD" & df$MALE=="female"])
+demographics[ 1, 6]<-length(df$Patient_ID[df$CKD3=="CKD" & df$MALE=="male"])
+demographics[ 1, 7]<-length(df$Patient_ID[df$CKD3=="CKD" & df$MALE=="female"])
+
+
+# 4) populate ages
+demographics[ 2, 2]<-paste(round(mean(df$age[df$CKD3 =="CKD"]),1),"+/-",round(sd(df$age[df$CKD3 =="CKD"]),1),sep="")
+demographics[ 2, 3]<-paste(round(mean(df$age[df$CKD3 =="no_CKD"]),1),"+/-",round(sd(df$age[df$CKD3 =="no_CKD"]),1),sep="")
+demographics[ 2, 4]<-paste(round(mean(df$age[df$CKD3 =="no_CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$age[df$CKD3 =="no_CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 2, 5]<-paste(round(mean(df$age[df$CKD3 =="no_CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$age[df$CKD3 =="no_CKD"& df$MALE == "female"]),1),sep="")
+demographics[ 2, 6]<-paste(round(mean(df$age[df$CKD3 =="CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$age[df$CKD3 =="CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 2, 7]<-paste(round(mean(df$age[df$CKD3 =="CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$age[df$CKD3 =="CKD"& df$MALE == "female"]),1),sep="")
+
+# 4) populate sbp
+demographics[ 3, 2]<-paste(round(mean(df$SBP[df$CKD3 =="CKD"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="CKD"]),1),sep="")
+demographics[ 3, 3]<-paste(round(mean(df$SBP[df$CKD3 =="no_CKD"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="no_CKD"]),1),sep="")
+demographics[ 3, 4]<-paste(round(mean(df$SBP[df$CKD3 =="no_CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="no_CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 3, 5]<-paste(round(mean(df$SBP[df$CKD3 =="no_CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="no_CKD"& df$MALE == "female"]),1),sep="")
+demographics[ 3, 6]<-paste(round(mean(df$SBP[df$CKD3 =="CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 3, 7]<-paste(round(mean(df$SBP[df$CKD3 =="CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$SBP[df$CKD3 =="CKD"& df$MALE == "female"]),1),sep="")
+
+# 4)populate DBP
+demographics[ 4, 2]<-paste(round(mean(df$DBP[df$CKD3 =="CKD"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="CKD"]),1),sep="")
+demographics[ 4, 3]<-paste(round(mean(df$DBP[df$CKD3 =="no_CKD"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="no_CKD"]),1),sep="")
+demographics[ 4, 4]<-paste(round(mean(df$DBP[df$CKD3 =="no_CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="no_CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 4, 5]<-paste(round(mean(df$DBP[df$CKD3 =="no_CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="no_CKD"& df$MALE == "female"]),1),sep="")
+demographics[ 4, 6]<-paste(round(mean(df$DBP[df$CKD3 =="CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 4, 7]<-paste(round(mean(df$DBP[df$CKD3 =="CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$DBP[df$CKD3 =="CKD"& df$MALE == "female"]),1),sep="")
+
+# 4)populate eGFR
+demographics[ 5, 2]<-paste(round(mean(df$eGFR[df$CKD3 =="CKD"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="CKD"]),1),sep="")
+demographics[ 5, 3]<-paste(round(mean(df$eGFR[df$CKD3 =="no_CKD"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="no_CKD"]),1),sep="")
+demographics[ 5, 4]<-paste(round(mean(df$eGFR[df$CKD3 =="no_CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="no_CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 5, 5]<-paste(round(mean(df$eGFR[df$CKD3 =="no_CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="no_CKD"& df$MALE == "female"]),1),sep="")
+demographics[ 5, 6]<-paste(round(mean(df$eGFR[df$CKD3 =="CKD" & df$MALE == "male"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="CKD"& df$MALE == "male"]),1),sep="")
+demographics[ 5, 7]<-paste(round(mean(df$eGFR[df$CKD3 =="CKD" & df$MALE == "female"]),1),"+/-",round(sd(df$eGFR[df$CKD3 =="CKD"& df$MALE == "female"]),1),sep="")
+
+
+
+# 5a) Generate the research questions
+# a) null -> there is no difference in CKD for men and woman 
+# b) alt. -> there is a statistically signifigent difference in CKD patiants between male and femlales.
+
+# 5b)
+#a) null -> there is no difference between the SBP between CKD pataints and non-CKD pataints in the male, female and combined patinats population
+#b) alt. -> there is a signifigant difference between the SBP between CKD pataints and non-CKD pataints in the male, female and combined patinats population
+
+
+# 6 & 7)populate diff column and pval for continous variables for 1. all 2. men and 3. woman 
+
+# add p-value column 
+demographics$P_all_CKD_noCKD <- NA
+
+#Loop through "all" data using iterator "row"
+for (row in 2:nrow(demographics)) {
+  var <- demographics[row,1] #<- var is the variable to work on, [age,SBP, DBP,eGFR]
+  ttest<-t.test(df[[var]][df$CKD3 =="no_CKD"],df[[var]][df$CKD3 =="CKD"]) #<- perform t-test 
+  diff_age_all<-ttest$estimate[1]-ttest$estimate[2]  #<- in difference in ttest 
+  LL_CI_age_all<-ttest$conf.int[1] # <- lower level for confidence interval 
+  UL_CI_age_all<-ttest$conf.int[2] #<- upper level for CI 
+  pval <- ttest$p.value #<- p-value 
+  # add values to demographics 
+  demographics[row,8]<-paste(round(diff_age_all,1)," (",round(LL_CI_age_all,1)," to ",round(UL_CI_age_all,1),")",sep="")
+  demographics[row,9] <- pval
+}
+#add column for male diff and male pvalue 
+demographics$Diff_men_CKD_minus_noCKD<- NA
+demographics$P_men_CKD_noCKD <- NA
+#Loop through "male" data using iterator "row"
+for (row in 2:nrow(demographics)) {
+  var <- demographics[row,1] #<- var is the variable to work on, [age,SBP, DBP,eGFR]
+  # perform t-test <-> see above for comments 
+  ttest<-t.test(df[[var]][df$CKD3 =="no_CKD" & df$MALE=="male"],df[[var]][df$CKD3 =="CKD" & df$MALE=="male"])
+  diff_var<-ttest$estimate[1]-ttest$estimate[2]
+  LL_CI_var<-ttest$conf.int[1]
+  UL_CI_age_var<-ttest$conf.int[2]
+  pval <- ttest$p.value 
+  #write to demographics 
+  demographics[row,10]<-paste(round(diff_var,1)," (",round(LL_CI_var,1)," to ",round(UL_CI_age_var,1),")",sep="")
+  demographics[row,11] <- pval
+  
+}
+# create diff and pval for female 
+demographics$Diff_women_minus_CKD_noCKD <- NA
+demographics$P_women_CKD_noCKD <-NA
+
+#Loop through "female" data using iterator "row"
+for (row in 2:nrow(demographics)) {
+  var <- demographics[row,1]
+  #perfrom t-test 
+  ttest<-t.test(df[[var]][df$CKD3 =="no_CKD"& df$MALE=="female"],df[[var]][df$CKD3 =="CKD"& df$MALE=="female"])
+  diff_var<-ttest$estimate[1]-ttest$estimate[2]
+  LL_CI_var<-ttest$conf.int[1]
+  UL_CI_var<-ttest$conf.int[2]
+  pval <- ttest$p.value 
+  #write to demographics 
+  demographics[row,12]<-paste(round(diff_var,1)," (",round(LL_CI_var,1)," to ",round(UL_CI_var,1),")",sep="")
+  demographics[row,13] <- pval
+  
+}
+
+# 6 & 7) fill in  diff columns for non-cont. variables 
+demographics[ 1, 8] <- strtoi(demographics[ 1, 3]) - strtoi(demographics[ 1, 2])
+demographics[ 1, 10] <- strtoi(demographics[ 1, 4]) - strtoi(demographics[ 1, 6])
+demographics[ 1, 12] <- strtoi(demographics[ 1, 5]) - strtoi(demographics[ 1, 7])
+
+#show demographics table and save 
+demographics
+write.csv(demographics,"/Users/user/Desktop/School/2021/Spring2021/BTM-6000/Module9/EE_graded_lab9.csv")
+
+# 8) contingency table 
+tbl<-table(df$CKD3,df$MALE)
+tbl
+
+
+# 9) chi-sqr. test 
+chisq.test(tbl)
+
+# pvalue greater than 0.05 so we fail to reject the null so the data suggests there is  a differance btw men and woman in terms of CKD
+
+demographics$Diff_in_P_val <- NA
+for(row in 2:nrow(demographics)){
+  val <- demographics[row,11] -  demographics[row,13]
+  demographics[row,14]<- val
+  
+}
+
+#the differance in pvals were all greater than 0.05 thus we fail to reject the null hypt.
+#-> there is  a differance btw men and woman in terms of CKD
+
+
+
+
+

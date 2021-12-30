@@ -1,0 +1,80 @@
+# Evan Edelstein 
+# Final Project 
+# hypt test analysis 
+
+library(doBy)
+library(dplyr)
+library(NHANES)
+library(pwr)
+library(nhanesA)
+library(ggplot2)
+# load Nhanes data set
+df <- NHANES
+#remove kids for now 
+nha <- filter(df, Age>=18)
+#summary(df)
+# remove NaN's 
+# df<-df[which(!is.na(df$SleepTrouble)), ]
+# df<-df[which(!is.na(df$SleepHrsNight)),]
+df<-df[which(!is.na(df$HealthGen)),]
+
+
+#df<-df[which(!is.na(df$Poverty)),]
+# if patient self-reports Heath is poor then "healthy" is 0 else it is 1
+df$healthy <- ifelse(df$HealthGen == "Poor",0,1)
+# 
+#split data into healthy and non healthy members
+df_healthy <- subset(df,healthy %in% c(1))
+df_not_healthy <- subset(df,healthy %in% c(0))
+#find mean hours slept of two setsmean_healthy_Hrs_sleep <- mean(df_healthy$SleepHrsNight)
+#mean_not_healthy_Hrs_sleep <- mean(df_not_healthy$SleepHrsNight)
+
+hyp_results <- data.frame()
+anova_results = data.frame()
+
+hyp_test <- function(df_hyp,var){
+  df_hyp<-df_hyp[which(!is.na(df_hyp[[var]])),]
+  avrg_healthy <- paste(round(mean(df_hyp[[var]][df_hyp$healthy ==1]),1),"+/-",round(sd(df_hyp[[var]][df_hyp$healthy ==1]),1),sep="")
+  avrg_unhealthy <- paste(round(mean(df_hyp[[var]][df_hyp$healthy ==0]),1),"+/-",round(sd(df_hyp[[var]][df_hyp$healthy ==0]),1),sep="")
+  ttest<-t.test(df_hyp[[var]][df_hyp$healthy == 1],df_hyp[[var]][df_hyp$healthy ==0]) #<- perform t-test 
+  diff_age_all<-ttest$estimate[1]-ttest$estimate[2]  #<- in difference in ttest 
+  LL_CI_age_all<-ttest$conf.int[1] # <- lower level for confidence interval 
+  UL_CI_age_all<-ttest$conf.int[2] #<- upper level for CI 
+  pval <- ttest$p.value #<- p-value 
+  alt_null <- ifelse(pval <= 0.05,"reject null","maintain null" )
+  diff <- paste(round(diff_age_all,1)," (",round(LL_CI_age_all,1)," to ",round(UL_CI_age_all,1),")",sep="")
+  #print(paste(var, diff, pval,alt_null))
+  new_row <- data.frame(mean_healthy = avrg_healthy, mean_unhealthy = avrg_unhealthy,diff = diff, pval = pval, alt_null = alt_null)
+  return(new_row)
+}
+anova_test_new <- function(df_anova,IV,DV){
+  #print(df_anova[[DV]])
+  df_anova$DV_tertiles <- ntile(df_anova[[DV]],3)
+  df_anova$DV_tertiles_factor <- factor(df_anova$DV_tertiles,levels=c(1:3),labels = c("Tertile 1","Tertile 2","Tertile 3"))
+  # 3B) compare the age of subjects in the respective tertiles.
+  formula <- as.formula(paste(IV,"~","DV_tertiles_factor"))
+  summaryBy( formula ,data = df_anova, FUN = c(mean,sd,min, max))
+  # 3C) compare the age of subjects applying Bonferroni correction
+  # anova test
+  anova_test <- aov(formula, data = df_anova)
+  summary(anova_test)
+  ttest <- pairwise.t.test(df_anova[[IV]],df_anova$DV_tertiles_factor,p.adjust.method = "bonferroni")
+  return(ttest)
+  
+}
+vars <- c("SleepHrsNight","BMI","PhysActiveDays","AlcoholDay","DaysMentHlthBad","DaysPhysHlthBad","HHIncomeMid","Poverty")
+
+for (var in vars){
+  new_row <- hyp_test(df,var)
+  hyp_results <- rbind(hyp_results,new_row)
+  ttest <- anova_test_new(df,c("healthy"),var)
+  ttest<- ttest$p.value	
+  print(var)
+  print(ttest)
+}
+
+hyp_results<- cbind(vars, hyp_results)
+df$Above_poverty <- ifelse( df$Poverty >= 2.5,1,0 )
+
+
+

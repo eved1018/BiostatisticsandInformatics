@@ -1,0 +1,16 @@
+install.packages(NHANES)
+library(NHANES)
+df<- NHANES
+data("NHANES")
+ls(NHANES)
+NHANES<-NHANES[!duplicated(NHANES$ID),]
+
+install.packages("nhanesA")
+library(nhanesA)
+#https://cran.r-project.org/web/packages/nhanesA/vignettes/Introducing_nhanesA.html
+nhanesTables('DEMOGRAPHICS', 2010)
+nhanesTables('DIETARY', 2010)
+nhanesTables('EXAMINATION', 2010)
+nhanesTables('LABORATORY', 2010)
+nhanesTables('QUESTIONNAIRE', 2010)
+

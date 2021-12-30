@@ -1,0 +1,10 @@
+"0",""
+"0","# means and sd chart for vars."
+"0","vars <- c(""BMI"",""SleepHrsNight"",""DaysPhysHlthBad"")"
+"0","for (var in vars){"
+"0","  total_avrg <- paste(round(mean(df_hyp[[var]],1)),""+/-"",round(sd(df_hyp[[var]]),1),sep="""")"
+"0","  avrg_healthy <- paste(round(mean(df_hyp[[var]][df_hyp$healthy ==1]),1),""+/-"",round(sd(df_hyp[[var]][df_hyp$healthy ==1]),1),sep="""")"
+"0","  avrg_unhealthy <- paste(round(mean(df_hyp[[var]][df_hyp$healthy ==0]),1),""+/-"",round(sd(df_hyp[[var]][df_hyp$healthy ==0]),1),sep="""")"
+"0","  }"
+"2","Error in mean(df_hyp[[var]], 1) : object 'df_hyp' not found
+"
